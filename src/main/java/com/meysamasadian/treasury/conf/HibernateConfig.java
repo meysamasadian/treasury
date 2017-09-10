@@ -1,4 +1,4 @@
-package com.websystique.spring.configuration;
+package com.meysamasadian.treasury.conf;
 
 import java.util.Properties;
 
@@ -6,6 +6,7 @@ import javax.sql.DataSource;
 
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -18,8 +19,8 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @Configuration
 @EnableTransactionManagement
-@ComponentScan({ "com.meysamasadian.treasury" })
-@PropertySource(value = { "classpath:application.properties" })
+@ComponentScan({ "com.meysamasadian.treasury.conf" })
+@PropertySource(value = {"classpath:treasury.properties"})
 public class HibernateConfig {
 
     @Autowired
@@ -37,10 +38,10 @@ public class HibernateConfig {
     @Bean
     public DataSource dataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        dataSource.setDriverClassName(environment.getRequiredProperty("oracle.jdbc.driver.OracleDriver"));
-        dataSource.setUrl(environment.getRequiredProperty("jdbc:oracle:thin:@127.0.0.1:1521:meisam"));
-        dataSource.setUsername(environment.getRequiredProperty("meisam"));
-        dataSource.setPassword(environment.getRequiredProperty("meisam"));
+        dataSource.setDriverClassName(environment.getRequiredProperty("jdbc.driverClassName"));
+        dataSource.setUrl(environment.getRequiredProperty("jdbc.url"));
+        dataSource.setUsername(environment.getRequiredProperty("jdbc.username"));
+        dataSource.setPassword(environment.getRequiredProperty("jdbc.password"));
         return dataSource;
     }
 

@@ -1,6 +1,7 @@
 package com.meysamasadian.treasury.controller;
 
 import com.meysamasadian.treasury.dto.AccountDto;
+import com.meysamasadian.treasury.dto.DocumentContainerFactory;
 import com.meysamasadian.treasury.dto.DocumentDto;
 import com.meysamasadian.treasury.exception.BusinessException;
 import com.meysamasadian.treasury.model.Account;
@@ -30,30 +31,28 @@ public class DocumentController {
     @ResponseBody
     public ResponseEntity issueDocument(@RequestBody DocumentDto documentDto, @PathVariable String opt) {
         try {
-            AccountDto source = accountService.load(documentDto.getSource().getPan());
+            AccountDto source = accountService.load(documentDto.getSource());
             accountService.validate(accountService.convert(source), opt);
-            documentService.issueDocument(documentDto);
+            String refId = documentService.issueDocument(documentDto);
             String message = String.valueOf(documentDto.getAmount()) + " was transfer from "
-                    + documentDto.getSource().getPan() + " to " + documentDto.getDest().getPan() + " successfully!!";
-            return new ResponseEntity(message, HttpStatus.OK);
+                    + documentDto.getSource() + " to " + documentDto.getDest() + " successfully!!";
+            return new ResponseEntity(DocumentContainerFactory.newOkInstance(refId,message), HttpStatus.OK);
         } catch (BusinessException e) {
             e.printStackTrace();
-            return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity(DocumentContainerFactory.newBadInstance(e.getMessage()), HttpStatus.BAD_REQUEST);
         }
     }
 
-    @RequestMapping(value = "/reverse", method = RequestMethod.POST)
+    @RequestMapping(value = "/reverse/{refId}", method = RequestMethod.POST)
     @ResponseBody
-    public ResponseEntity reverseLastDocument(@RequestBody AccountDto accountDto, @PathVariable String opt) {
+    public ResponseEntity reverseLastDocument(@PathVariable String refId) {
         try {
-            AccountDto source = accountService.load(accountDto.getPan());
-            accountService.validate(accountService.convert(source), opt);
-            documentService.reverseLastDocument(accountDto);
-            String message = "Document reversed successfully!!";
-            return new ResponseEntity(message, HttpStatus.OK);
+            String reverseRefId = documentService.reverseDocument(refId);
+            String message = "Document " + refId + " was reversed successfully!!";
+            return new ResponseEntity(DocumentContainerFactory.newOkInstance(reverseRefId, message), HttpStatus.OK);
         } catch (BusinessException e) {
             e.printStackTrace();
-            return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity(DocumentContainerFactory.newBadInstance(e.getMessage()), HttpStatus.BAD_REQUEST);
         }
     }
 }

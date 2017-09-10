@@ -12,7 +12,6 @@ import java.util.List;
 /**
  * Created by rahnema on 9/6/2017.
  */
-@Repository
 @Transactional
 public class GenericDaoImpl<T> implements GenericDao<T> {
 

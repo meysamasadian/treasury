@@ -8,4 +8,5 @@ import com.meysamasadian.treasury.model.Document;
  */
 public interface DocumentDao extends GenericDao<Document> {
     Document loadLastOfDocument(String pan);
+    Document load(String refId);
 }

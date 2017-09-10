@@ -2,75 +2,70 @@ package com.meysamasadian.treasury.service;
 
 import com.meysamasadian.treasury.dao.AccountDao;
 import com.meysamasadian.treasury.dto.AccountDto;
+import com.meysamasadian.treasury.dto.OtpContainer;
 import com.meysamasadian.treasury.exception.BusinessException;
 import com.meysamasadian.treasury.model.Account;
-import com.meysamasadian.treasury.model.Otp;
-import org.joda.time.DateTimeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
 import java.util.Random;
 
 /**
  * Created by rahnema on 9/6/2017.
  */
 @Service
+@PropertySource(value = {"classpath:treasury.properties"})
 public class AccountService {
     @Autowired
     private AccountDao accountDao;
 
+    @Autowired
+    private Cache otpCache;
+
+    @Autowired
+    private Environment environment;
+
     public void validate(Account account, String otp) throws BusinessException {
-        Otp dbOtp = accountDao.getOpt(account.getPan());
-        if (!isValid(dbOtp)) {
+        Cache.ValueWrapper wrapper = otpCache.get(account.getPan());
+
+        OtpContainer container =  wrapper != null ? (OtpContainer)wrapper.get() : null;
+        if (container != null) {
+            if (!container.getCode().equals(otp)) {
+                throw new BusinessException(BusinessException.OTP_IS_NOT_VALID);
+            }
+        } else {
             throw new BusinessException(BusinessException.OTP_IS_NOT_VALID);
         }
     }
 
     public String login(String pan) {
-        Otp otp = accountDao.getOpt(pan);
-        if (isValid(otp)) {
-            return otp.getOpt();
-        } else {
-            if (otp != null) {
-                accountDao.logout(otp);
+        Cache.ValueWrapper wrapper = otpCache.get(pan);
+
+        OtpContainer container =  wrapper != null ? (OtpContainer)wrapper.get() : null;
+        if (container != null) {
+            if (container.getExpire() > System.currentTimeMillis()) {
+                return container.getCode();
             }
         }
-        return newOtp(pan);
+        otpCache.put(pan,generateOtp());
+        return ((OtpContainer) otpCache.get(pan).get()).getCode();
     }
 
-    private String newOtp(String pan) {
-        Account account = accountDao.load(pan);
-        Otp otp = new Otp();
-        Date date = new Date();
-        otp.setAccount(account);
-        LocalDateTime localDateTime = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-        localDateTime = localDateTime.plusDays(1);
-        otp.setExpireDate(localDateTime.toString());
-        otp.setOpt(generateOtp());
-        accountDao.login(otp);
-        return otp.getOpt();
-    }
 
-    private String generateOtp() {
+    private OtpContainer generateOtp() {
         StringBuilder builder = new StringBuilder();
         Random random = new Random();
         int i = 0;
-        while(i < 4) {
+        while(i < Integer.parseInt(environment.getRequiredProperty("otp.expire_length"))) {
             builder.append(random.nextInt(9));
+            i++;
         }
-        return builder.toString();
-    }
-
-    private boolean isValid(Otp otp) {
-        if (otp == null) {
-            return false;
-        }
-        Date date = new Date();
-        return otp.getExpireDate().compareTo(date.toString()) >= 0;
+        return new OtpContainer(builder.toString(),
+                System.currentTimeMillis() + Long.parseLong(environment.getRequiredProperty("otp.expire_duration")));
     }
 
     public void register(AccountDto dto) {
@@ -82,21 +77,20 @@ public class AccountService {
     }
 
 
-    public BigDecimal getCurrentBalance(String pan) {
-        return accountDao.load(pan).getBalance();
-    }
-
     public void increaseBalance(AccountDto dto, BigDecimal amount) {
-        dto.setBalance(dto.getBalance().subtract(amount));
+        Account account = accountDao.load(dto.getPan());
+        account.setBalance(account.getBalance().add(amount));
+        accountDao.update(account);
     }
 
     public void decreaseBalance(AccountDto dto, BigDecimal amount) {
-        dto.setBalance(dto.getBalance().add(amount));
+        Account account = accountDao.load(dto.getPan());
+        account.setBalance(account.getBalance().subtract(amount));
+        accountDao.update(account);
     }
 
     public Account convert(AccountDto accountDto) {
         Account account = new Account();
-        account.setId(accountDto.getId());
         account.setPan(accountDto.getPan());
         account.setBalance(accountDto.getBalance());
         return account;

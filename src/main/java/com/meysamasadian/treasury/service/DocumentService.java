@@ -28,37 +28,42 @@ public class DocumentService {
     @Autowired
     private AccountDao accountDao;
 
-    public void issueDocument(DocumentDto dto) throws BusinessException {
-        AccountDto source = dto.getSource();
-        AccountDto dest = dto.getDest();
+    public String issueDocument(DocumentDto dto) throws BusinessException {
+        Account source = accountDao.load(dto.getSource());
+        Account dest = accountDao.load(dto.getDest());
         BigDecimal amount = dto.getAmount();
-        if (amount.compareTo(source.getBalance()) < 0) {
+        if (amount.compareTo(source.getBalance()) > 0) {
             throw new BusinessException(BusinessException.NOT_ENOUGH_MONEY);
         }
 
-        accountService.decreaseBalance(source,amount);
-        accountService.increaseBalance(dest,amount);
+        accountService.decreaseBalance(accountService.present(source),amount);
+        accountService.increaseBalance(accountService.present(dest),amount);
         Account sourceOrigin = accountDao.load(source.getPan());
         Account destOrigin = accountDao.load(dest.getPan());
 
         Document document = new Document();
         document.setAmount(amount);
         document.setSource(sourceOrigin);
-        document.setSource(destOrigin);
+        document.setDest(destOrigin);
         Date date = new Date();
         document.setDate(date.toString());
+        document.setRefId(generateDocumentRefId());
         documentDao.save(document);
+        return document.getRefId();
     }
 
-    public void reverseLastDocument(AccountDto accountDto) throws BusinessException {
-        Document document = documentDao.loadLastOfDocument(accountDto.getPan());
+    private String generateDocumentRefId() {
+        return "DOC_"+System.currentTimeMillis();
+    }
+
+    public String reverseDocument(String refId) throws BusinessException {
+        Document document = documentDao.load(refId);
         if (document != null) {
-            AccountDto source = accountService.present(document.getSource());
-            AccountDto dest = accountService.present(document.getDest());
-            BigDecimal amount = document.getAmount();
-            accountService.increaseBalance(source, amount);
-            accountService.decreaseBalance(dest,amount);
-            documentDao.delete(document);
+            DocumentDto documentDto = new DocumentDto();
+            documentDto.setAmount(document.getAmount());
+            documentDto.setSource(document.getDest().getPan());
+            documentDto.setDest(document.getSource().getPan());
+            return issueDocument(documentDto);
         }
         throw new BusinessException(BusinessException.DOCUMENT_NOT_EXISTS);
     }

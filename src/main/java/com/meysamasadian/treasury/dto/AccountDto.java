@@ -4,12 +4,13 @@ import javax.persistence.Column;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 /**
  * Created by rahnema on 9/6/2017.
  */
-public class AccountDto {
+public class AccountDto implements Serializable {
     private long id;
     private BigDecimal balance;
     private String pan;

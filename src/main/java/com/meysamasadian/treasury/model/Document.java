@@ -20,15 +20,25 @@ public class Document {
     @Column(name = "c_date")
     private String date;
 
-    @Column(name = "c_source")
     @OneToOne
     @JoinColumn(name="c_source")
     private Account source;
 
-    @Column(name = "c_dest")
     @OneToOne
     @JoinColumn(name="c_dest")
     private Account dest;
+
+    @Column(name = "c_refid")
+    private String refId;
+
+
+    public String getRefId() {
+        return refId;
+    }
+
+    public void setRefId(String refId) {
+        this.refId = refId;
+    }
 
     public String getDate() {
         return date;

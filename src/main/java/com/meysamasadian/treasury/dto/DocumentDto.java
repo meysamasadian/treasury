@@ -8,8 +8,8 @@ import java.math.BigDecimal;
 public class DocumentDto {
     private long id;
     private BigDecimal amount;
-    private AccountDto source;
-    private AccountDto dest;
+    private String source;
+    private String dest;
     private String date;
 
     public String getDate() {
@@ -36,19 +36,19 @@ public class DocumentDto {
         this.amount = amount;
     }
 
-    public AccountDto getSource() {
+    public String getSource() {
         return source;
     }
 
-    public void setSource(AccountDto source) {
+    public void setSource(String source) {
         this.source = source;
     }
 
-    public AccountDto getDest() {
+    public String getDest() {
         return dest;
     }
 
-    public void setDest(AccountDto dest) {
+    public void setDest(String dest) {
         this.dest = dest;
     }
 }

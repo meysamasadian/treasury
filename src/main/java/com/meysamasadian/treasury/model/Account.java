@@ -14,7 +14,7 @@ public class Account {
     @Column(name = "id")
     private long id;
 
-    @Column(name = "c_amount")
+    @Column(name = "c_balance")
     private BigDecimal balance;
 
 

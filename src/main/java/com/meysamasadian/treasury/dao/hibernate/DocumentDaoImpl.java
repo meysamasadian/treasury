@@ -45,4 +45,13 @@ public class DocumentDaoImpl extends GenericDaoImpl<Document> implements Documen
         List<Document> documents = query.list();
         return documents != null && !documents.isEmpty() ? documents.get(0) : null;
     }
+
+    @Override
+    public Document load(String refId) {
+        @SuppressWarnings("JpaQlInspection")
+        String queryStr = "select doc from Document doc where doc.refId = :refId or doc.refId = :refId";
+        Query query = sessionFactory.getCurrentSession().createQuery(queryStr).setString("refId", refId);
+        List<Document> documents = query.list();
+        return documents != null && !documents.isEmpty() ? documents.get(0) : null;
+    }
 }
